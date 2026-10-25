@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f1">
+  <title>GreenScope — Map. Act. Grow.</title>
+  <meta name="description" content="EcoTrack combines Sentinel-2 vegetation monitoring, WebGIS, and student citizen science for school-centered community green action in Jakarta.">
+
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://basemaps.cartocdn.com">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand-wrap" href="#top" aria-label="EcoTrack home">
+      <div class="brand">EcoTrack</div>
+      <div class="tagline">Map. Act. Grow.</div>
+    </a>
+    <div class="top-actions">
+      <span class="status-pill" id="dataModeStatus">Device-local pilot</span>
+      <span class="badge">InYSIA Prototype</span>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">SATELLITE MONITORING + CITIZEN SCIENCE</p>
+        <h1>Turning environmental data into student-led action.</h1>
+        <p class="lead">
+          EcoTrack is a school-centered community WebGIS that translates Sentinel-2 vegetation-change indicators
+          into field-verification missions for students and nearby residents around SMP Islam Al-Azhar 19 Cibubur.
+        </p>
+        <div class="hero-actions">
+          <button id="joinMissionBtn" type="button">Join Mission 01</button>
+          <a class="button-link secondary-link" href="#how-it-works">How it works</a>
+        </div>
+      </div>
+
+      <div class="hero-note">
+        <strong>Satellite Data Status</strong>
+        <span id="satStatus">Loading analysis…</span>
+        <small>
+          Sentinel-2 Surface Reflectance data processed in Google Earth Engine. Satellite indicators are screening evidence,
+          not automatic proof of tree loss or a planting recommendation.
+        </small>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Current environmental indicators">
+      <article class="metric"><span>2026 Mean NDVI</span><strong id="meanNdvi">—</strong><small>June 1–August 23 median composite</small></article>
+      <article class="metric"><span>NDVI ≥ 0.35</span><strong id="greenCoverage">—</strong><small>Working vegetation indicator</small></article>
+      <article class="metric"><span>Field Observations</span><strong id="obsCount">0</strong><small>Anonymous citizen-science records</small></article>
+      <article class="metric"><span>Sites for Review</span><strong id="actionCount">0</strong><small>Hardscape or exposed-area observations</small></article>
+    </section>
+
+    <section class="metrics" aria-label="Historical comparison">
+      <article class="metric"><span>Mean NDVI — 2022</span><strong id="meanNdvi2022">—</strong><small>Historical baseline</small></article>
+      <article class="metric"><span>Mean NDVI — 2026</span><strong id="meanNdvi2026">—</strong><small>Current comparison period</small></article>
+      <article class="metric"><span>Relative Mean NDVI Change</span><strong id="relativeChange">—</strong><small>2026 relative to 2022 baseline</small></article>
+      <article class="metric"><span>Community Study Radius</span><strong>250 m</strong><small>School-centered pilot area</small></article>
+    </section>
+
+    <section class="metrics" aria-label="Vegetation change screening">
+      <article class="metric metric-decrease"><span>Decreased Signal</span><strong id="decreasedArea">—</strong><small>ΔNDVI below −0.05</small></article>
+      <article class="metric"><span>Relatively Stable</span><strong id="stableArea">—</strong><small>ΔNDVI −0.05 to +0.05</small></article>
+      <article class="metric metric-increase"><span>Increased Signal</span><strong id="increasedArea">—</strong><small>ΔNDVI above +0.05</small></article>
+      <article class="metric"><span>Study Area</span><strong>19.40 ha</strong><small>250 m school-centered community AOI</small></article>
+    </section>
+
+    <section class="impact-section" aria-label="Community movement progress">
+      <div>
+        <p class="eyebrow">COMMUNITY MOVEMENT</p>
+        <h2>One shared mission: verify what the satellite cannot explain.</h2>
+        <p class="section-copy">
+          EcoTrack turns environmental monitoring into participation. Every anonymous field observation adds ground context
+          to the satellite signal and helps the community distinguish existing vegetation, low vegetation, hard surfaces, and exposed areas.
+        </p>
+      </div>
+      <div class="impact-grid">
+        <div class="impact-card"><span>Observations collected</span><strong id="impactObservations">0</strong></div>
+        <div class="impact-card"><span>Vegetated observations</span><strong id="impactGreen">0</strong></div>
+        <div class="impact-card"><span>Sites needing review</span><strong id="impactNeedsReview">0</strong></div>
+        <div class="impact-card"><span>Mission target</span><strong id="missionProgressLabel">0 / 50</strong></div>
+      </div>
+      <div class="progress-track" aria-label="Mission observation progress"><div class="progress-fill" id="missionProgress"></div></div>
+    </section>
+
+    <section class="workspace" id="webgis">
+      <div class="map-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">JAKARTA REGIONAL COMMUNITY WEBGIS</p>
+            <h2>SMP Islam Al-Azhar 19 Cibubur — Active Pilot Site</h2>
+          </div>
+          <div class="controls">
+            <button id="jakartaViewBtn" class="secondary" type="button">Jakarta View</button>
+            <button id="pilotViewBtn" class="secondary" type="button">Pilot Area</button>
+            <button id="surveyModeBtn" type="button">Activate Survey Mode</button>
+            <button id="exportBtn" class="secondary" type="button">Export GeoJSON</button>
+          </div>
+        </div>
+        <div id="map" aria-label="EcoTrack Jakarta community environmental map"></div>
+        <div class="map-help">
+          <strong>Field workflow:</strong> Pilot Area → Survey Mode → click a real location → observe the ground condition →
+          select a category → add a short environmental note → save. Do not submit names, phone numbers, home addresses, or other personal information.
+        </div>
+      </div>
+
+      <aside class="side-card">
+        <p class="eyebrow"> LOOP</p>
+        <h2>Observe → Verify → Act → Monitor</h2>
+
+        <div class="mission">
+          <span>Mission 01</span>
+          <strong>Verify vegetation-change areas identified by satellite analysis.</strong>
+          <p>
+            The 2022–2026 comparison screens where vegetation signals decreased, stayed relatively stable, or increased.
+            Ground observations are used before any local cause or intervention is claimed.
+          </p>
+        </div>
+
+        <div class="legend">
+          <h3>Field Observation Categories</h3>
+          <div><i class="dot tree"></i> Tree / Canopy</div>
+          <div><i class="dot grass"></i> Grass / Low Vegetation</div>
+          <div><i class="dot hard"></i> Concrete / Asphalt / Hardscape</div>
+          <div><i class="dot exposed"></i> Open / Exposed Area</div>
+        </div>
+
+        <div class="data-mode-box">
+          <h3>Participation Mode</h3>
+          <p id="dataModeDescription">Observations are currently stored on this device. Configure the shared database to combine submissions from multiple devices.</p>
+          <button id="refreshCommunityBtn" class="secondary full-button" type="button">Refresh Community Data</button>
+        </div>
+
+        <div class="analysis-box">
+          <h3>Satellite Analysis Data</h3>
+          <p> automatically loads <code>data/analysis.json</code>. A new JSON can also be loaded for updated analyses.</p>
+          <label for="analysisFile">Load analysis JSON</label>
+          <input id="analysisFile" type="file" accept=".json,application/json">
+        </div>
+      </aside>
+    </section>
+
+    <section class="lower-grid">
+      <article class="panel">
+        <p class="eyebrow">HISTORICAL VEGETATION COMPARISON</p>
+        <h2>Mean NDVI: 2022 vs 2026</h2>
+        <div class="chart-wrap"><canvas id="trendChart" aria-label="Historical mean NDVI chart"></canvas></div>
+        <p class="muted" id="trendMessage">Loading historical analysis…</p>
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow">CITIZEN SCIENCE</p>
+        <h2>Latest Field Observations</h2>
+        <div id="observationsList" class="obs-list"><p class="muted">No observations yet. Join Mission 01 to start ground verification.</p></div>
+        <button id="clearObsBtn" class="danger-link" type="button">Clear Device-Local Data</button>
+      </article>
+    </section>
+
+    <section class="method" id="how-it-works">
+      <p class="eyebrow">HOW EcoTrack CREATES SOCIAL + ENVIRONMENTAL VALUE</p>
+      <h2>From remote sensing to a repeatable community action cycle.</h2>
+      <div class="steps">
+        <div><b>1</b><span>Detect</span><small>Sentinel-2 identifies vegetation-signal change across the pilot area.</small></div>
+        <div><b>2</b><span>Understand</span><small>The WebGIS makes the evidence understandable without GIS software.</small></div>
+        <div><b>3</b><span>Verify</span><small>Students and residents record anonymous ground observations.</small></div>
+        <div><b>4</b><span>Discuss</span><small>The school community reviews observations before proposing action.</small></div>
+        <div><b>5</b><span>Monitor</span><small>The same area can be checked again after protection or greening activities.</small></div>
+      </div>
+    </section>
+
+    <section class="two-column-info">
+      <article class="info-card">
+        <p class="eyebrow">ENVIRONMENTAL OUTCOME</p>
+        <h2>What EcoTrack measures</h2>
+        <p>
+          EcoTrack monitors changes in vegetation spectral response and provides a structured way to verify local land conditions.
+          It does not assume that every decrease is caused by tree removal. Field evidence is part of the method.
+        </p>
+      </article>
+      <article class="info-card">
+        <p class="eyebrow">SOCIAL MOVEMENT OUTCOME</p>
+        <h2>What participation changes</h2>
+        <p>
+          The school becomes a community environmental anchor: students move from passive awareness to collecting evidence,
+          discussing local conditions, and monitoring whether community actions correspond to measurable environmental change.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <dialog id="surveyDialog">
+    <form method="dialog" id="surveyForm">
+      <div class="dialog-head">
+        <div><p class="eyebrow">FIELD OBSERVATION</p><h2>Record Site Condition</h2></div>
+        <button type="submit" value="cancel" class="icon-btn" aria-label="Close">×</button>
+      </div>
+      <div class="privacy-note"><strong>Anonymous environmental data only.</strong> Do not enter names, phone numbers, home addresses, or personal details.</div>
+      <label for="obsCategory">Observation Category
+        <select id="obsCategory" required>
+          <option value="tree">Tree / Canopy</option>
+          <option value="grass">Grass / Low Vegetation</option>
+          <option value="hard">Concrete / Asphalt / Hardscape</option>
+          <option value="exposed">Open / Exposed Area</option>
+        </select>
+      </label>
+      <label for="obsNote">Environmental Note
+        <textarea id="obsNote" maxlength="160" placeholder="Example: exposed hard surface with little shade at midday…"></textarea>
+      </label>
+      <input id="obsLat" type="hidden"><input id="obsLng" type="hidden">
+      <div class="dialog-actions">
+        <button type="submit" value="cancel" class="secondary">Cancel</button>
+        <button id="saveObsBtn" type="button">Save Observation</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer>
+    <span><strong>EcoTrack</strong> — Satellite-assisted community environmental monitoring and citizen science.</span>
+    <span>Basemap © OpenStreetMap contributors / CARTO. Satellite analysis: Sentinel-2 / Google Earth Engine.</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
